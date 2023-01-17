@@ -25,7 +25,7 @@ Router.get('/datarscovid', (req, res) => {
     axios.get(url)
     .then(function (res) {
         var datacovid = res.data;
-        console.log(datacovid);
+        res.json(datacovid)
     })
     .catch(function (err) {
         console.log(err);
@@ -63,7 +63,7 @@ Router.get('/datars', (req, res) => {
     axios.get(url)
     .then(function (res) {
         var datars = res.data;
-        console.log(datars);
+        res.json(datars);
     })
     .catch(function (err) {
     console.log(err);
@@ -92,68 +92,6 @@ Router.get('/writedatars', (req, res) => {
         console.log(err);
     })
 })
-
-/** Route for join */
-// Router.get('/join', (req, res) => {
-//     let res1 = res;
-//     /** get data RS Covid */
-//     url1 = process.env.COVID_URL;
-//     axios.get(url1)
-//     .then(function (res) {
-//         var datacovid = res.data;
-
-//         /** get data RS */
-//         let res1 = res;
-//         url2 = process.env.RS_URL;
-//         axios.get(url2)
-//         .then(function (res, next) {
-//             var datars = res.data;
-
-//             /** join data */
-//             var mergedSatu = [];
-//             var mergedDua = [];
-
-//             for(var j in datars){
-//                 for (var i in datacovid) {
-//                     /** get jenis RS = RSUD */
-//                     if (datars[j].jenis_rumah_sakit === "Rumah Sakit Umum Daerah") {
-//                         /** get character awal nama rs covid = RSUD */
-//                         if (datacovid[i].nama_rumah_sakit.substring(0, 4) === "RSUD") {
-//                             /** cek jika nama rs dan nama rs di data rs covid sama */
-//                             var namaRSBesar = datars[j].nama_rumah_sakit.toUpperCase();
-//                             var namaRSCovidBesar = datacovid[i].nama_rumah_sakit.toUpperCase();
-//                             if (namaRSBesar === namaRSCovidBesar.substring(5)) {
-//                                 mergedSatu.push({ ...datacovid[i], ...datars[j] })
-//                             }
-//                         }
-//                     }
-//                     /** get jenis RS = Rumah Sakit Umum */
-//                     if (datars[j].jenis_rumah_sakit === "Rumah Sakit Umum") {
-//                         /** get character awal nama rs covid = RS */
-//                         if (datacovid[i].nama_rumah_sakit.substring(0, 2) === "RS") {
-//                             /** cek jika nama rs dan nama rs di data rs covid sama */
-//                             var namaRSBesar = datars[j].nama_rumah_sakit.toUpperCase();
-//                             var namaRSCovidBesar = datacovid[i].nama_rumah_sakit.toUpperCase();
-//                             if (namaRSBesar === namaRSCovidBesar.substring(3)) {
-//                                 mergedDua.push({ ...datacovid[i], ...datars[j] })
-//                             }
-//                         }
-//                     }
-//                 }
-//             }
-
-//             /** print out data */
-//             console.log(mergedSatu);
-//             console.log(mergedDua);
-//         })
-//         .catch(function (err) {
-//             console.log(err);
-//         })
-//     })
-//     .catch(function (err) {
-//         console.log(err);
-//     })
-// })
 
 /** Route for join from written file */
 Router.get('/joinwrittenfile', (req, res) => {
@@ -287,7 +225,7 @@ Router.get('/joinwrittenfile', (req, res) => {
                 }
 
                 /** merged all */
-                mergedAll.push({ ...mergedSatu, ...mergedDua, ...mergedTiga, ...mergedEmpat, ...mergedLima, ...mergedEnam, ...mergedTujuh, ...mergedDelapan });
+                mergedAll.push(...mergedSatu, ...mergedDua, ...mergedTiga, ...mergedEmpat, ...mergedLima, ...mergedEnam, ...mergedTujuh, ...mergedDelapan);
                 // console.log(mergedAll);
 
                 /** print out data */
@@ -309,7 +247,7 @@ Router.get('/joinwrittenfile', (req, res) => {
     }
 })
 
-Router.get('/orderby', (req, res) => {
+Router.get('/orderbykelurahan', (req, res) => {
     try {
         /** read data RS Covid */
         fs.readFile('datamerge.json', (err, data) => {
@@ -319,7 +257,11 @@ Router.get('/orderby', (req, res) => {
             var data = JSON.parse(data);
 
             /** buat perbanding untuk sort */
-            data.sort((a, b) => a.kecamatan - b.kecamatan);
+            data.sort(function (a, b) {
+                var textA = a.kelurahan;
+                var textB = b.kelurahan;
+                return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
+            });
             
             /** print out */
             res.json(data)
@@ -341,5 +283,40 @@ Router.get('/orderby', (req, res) => {
     }
 });
 
+Router.get('/orderbykecamatan', (req, res) => {
+    try {
+        /** read data RS Covid */
+        fs.readFile('datamerge.json', (err, data) => {
+            if (err) {
+                console.log(err);
+            }
+            var data = JSON.parse(data);
+
+            /** buat perbanding untuk sort */
+            data.sort(function (a, b) {
+                var textA = a.kecamatan;
+                var textB = b.kecamatan;
+                return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
+            });
+            
+            /** print out */
+            res.json(data)
+
+            /** convert data */
+            var dataorder = JSON.stringify(data);
+
+            /** write file */
+            fs.writeFile('dataorder.json', dataorder, (err) => {
+                if (err) {
+                    console.log("Gagal Membuat File Data Order");
+                } else {
+                    console.log("File Data Order Berhasil Dibuat");
+                }
+            });
+        })
+    } catch (err) {
+        console.log(err);
+    }
+});
 
 module.exports = Router;
